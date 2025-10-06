@@ -5,6 +5,7 @@ const driverRoutes = require("./src/routes/driver.routes.js");
 const connectDB = require("./src/config/db.js");
 const userRoutes = require("./src/routes/user.routes.js")
 const pickupRoutes = require("./src/routes/pickup.routes.js")
+const adminRoutes = require("./src/routes/admin.routes.js")
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ app.use("/api/auth", require("./src/routes/auth.routes.js"));
 app.use("/api/drivers", driverRoutes);
 app.use("/api/users",userRoutes);
 app.use("/api/pickups",pickupRoutes);
+app.use("/api/admin",adminRoutes);
 // test route
 app.get("/", (req, res) => {
     res.send("Waste pickup Backend API running");
