@@ -1,7 +1,7 @@
 const Admin = require("../models/admin.model");
 const Driver = require("../models/driver.model");
 const Pickup = require("../models/pickup.model");
-
+const User = require("../models/user.model");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
@@ -75,20 +75,22 @@ exports.getDashboardStats = async (req, res) => {
     const completedPickups = await Pickup.countDocuments({
       status: "completed",
     });
-    const pendingPickups = await Pickup.countDocuments({ staus: "pending" });
+    const pendingPickups = await Pickup.countDocuments({ status: "pending" });
 
     // Optional :area-wise pickup stats
 
-    const areastats = await Pickup.aggregate({
-      $group: {
-        _id: "$address",
-        total: { $sum: 1 },
-        completed: {
-          $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
+    const areastats = await Pickup.aggregate([
+      {
+        $group: {
+          _id: "$address",
+          total: { $sum: 1 },
+          completed: {
+            $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
+          },
+          pending: { $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] } },
         },
-        pending: { $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] } },
       },
-    });
+    ]);
 
     res.json({
       totalDrivers,
@@ -102,3 +104,74 @@ exports.getDashboardStats = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// get all drivers
+exports.getAllDrivers = async (req, res) => {
+  try {
+    const drivers = await Driver.find().select("-password");
+    res.json(drivers);
+  } catch (error) {
+    console.log("get all drivers error:", error);
+    res.status(500).json({ message: error.message } || "Server error");
+  }
+};
+// get all users
+exports.getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().select("-password");
+    res.json(users);
+  } catch (error) {
+    console.log("get all users error:", error);
+    res.status(500).json({ message: error.message } || "Server error");
+  }
+};
+
+/// Assiafn driver manually
+exports.assiagnDriverManually = async (req, res) => {
+  try {
+    const { driverId, pickupId } = req.body;
+    const driver = await Driver.findById(driverId);
+    const pickup = await Pickup.findById(pickupId);
+
+    if (!pickup || !driver) {
+      return res.status(404).json({ message: "driver or pickup not found" });
+    }
+    // Assiagn only if driver is available and pickup is pending
+    pickup.driver = driverId;
+    pickup.status = "assigned";
+    await pickup.save();
+
+    driver.isAvailable = false;
+    await driver.save();
+    res.json({ message: "driver assigned successfully", pickup, driver });
+  } catch (error) {
+    console.log("assign driver manually error:", error);
+    res.status(500).json({ message: error.message } || "Server error");
+  }
+};
+
+
+// Delete a user
+exports.deleteUser = async (req,res)=>{
+  try {
+        const {id} = req.params;
+        await User.findByIdAndDelete(id);
+        res.json({message:"user deleted successfully"})
+
+  } catch (error) {
+    console.log("delete user error:", error);
+    res.status(500).json({ message: error.message } || "Server error");
+  }
+}
+
+// delete a deriver
+exports.deleteDriver  = async(req,res)=>{
+  const {id} = req.params;
+  try {
+    await Driver.findByIdAndDelete(id);
+    res.json({ message: "driver deleted successfully" });
+  } catch (error) {
+    console.log("delete driver error:", error);
+    res.status(500).json({ message: error.message } || "Server error");
+  }
+}

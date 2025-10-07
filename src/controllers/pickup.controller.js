@@ -1,5 +1,8 @@
 const Pickup = require("../models/pickup.model");
 const Driver = require("../models/driver.model");
+const User = require("../models/user.model");
+
+const sendEmail = require("../config/sendEmail");
 
 // createa a picup request by a user
 
@@ -41,6 +44,14 @@ exports.createPickup = async (req, res) => {
     nearestDriver.isAvailable = false;
     await nearestDriver.save();
 
+    // send email to user
+    const user = await User.findById(req.user.id);
+    await sendEmail({
+      to: user.email,
+      subject: "pickup assiagned",
+      textL: `Hello ${user.name},your waste pickup has been scheduled with driver ${nearestDriver.name},vehicle number:${nearestDriver.vehicleNumber}.`,
+    });
+
     res.status(201).json({
       message: "pickup request created successfully",
       pickup: existingPickup,
@@ -77,11 +88,10 @@ exports.updateStatus = async (req, res) => {
     const pickup = await Pickup.findById(pickupId);
     if (!pickup) return res.status(404).json({ message: "Pickup not found" });
 
-      // Only assigned driver can update
+    // Only assigned driver can update
     if (pickup.driver.toString() !== req.user.id) {
       return res.status(403).json({ message: "Access denied" });
     }
-
 
     pickup.status = status;
     await pickup.save();
@@ -92,6 +102,14 @@ exports.updateStatus = async (req, res) => {
       driver.isAvailable = true;
       await driver.save();
     }
+
+    //// send email about completion to user
+    const user = await User.findById(pickup.user);
+    await sendEmail({
+      to: user.email,
+      subject: "pickup completed",
+      textL: `Hello ${user.name}, your waste pickup at ${pickup.address} has been completed by the driver ${pickup.driver.name}.`,
+    });
 
     res.json({ message: "Status updated", pickup });
   } catch (error) {
