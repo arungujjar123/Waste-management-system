@@ -15,6 +15,12 @@ yarn-error.log*
 logs
 *.log
 
+# Firebase Service Accounts (DO NOT COMMIT)
+serviceAccountKey.json
+firebase-adminsdk*.json
+firebaseServiceAccount.json
+**/firebaseServiceAccount.json
+
 # Runtime data
 pids
 *.pid
