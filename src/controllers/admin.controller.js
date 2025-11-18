@@ -126,8 +126,8 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
-/// Assiafn driver manually
-exports.assiagnDriverManually = async (req, res) => {
+/// Assign driver manually
+exports.assignDriverManually = async (req, res) => {
   try {
     const { driverId, pickupId } = req.body;
     const driver = await Driver.findById(driverId);
@@ -164,7 +164,21 @@ exports.deleteUser = async (req,res)=>{
   }
 }
 
-// delete a deriver
+// Get all pickups
+exports.getAllPickups = async (req, res) => {
+  try {
+    const pickups = await Pickup.find()
+      .populate("user", "name email phone")
+      .populate("driver", "name email phone vehicleNumber")
+      .sort({ createdAt: -1 });
+    res.json(pickups);
+  } catch (error) {
+    console.log("get all pickups error:", error);
+    res.status(500).json({ message: error.message } || "Server error");
+  }
+};
+
+// delete a driver
 exports.deleteDriver  = async(req,res)=>{
   const {id} = req.params;
   try {
